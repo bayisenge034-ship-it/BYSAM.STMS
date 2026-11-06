@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BYSAM.STMS | Student Management System</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f7fb;color:#1e293b}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:250px;background:#142b4a;color:white;padding:25px 16px;flex-shrink:0}
+.logo{font-size:23px;font-weight:bold;margin-bottom:35px}
+.logo span{color:#55d68b}
+.nav-title{font-size:11px;color:#9aacc2;margin:24px 10px 10px}
+.nav button{width:100%;padding:13px 12px;border:0;background:none;color:#d5dfeb;text-align:left;border-radius:8px;margin:3px 0;cursor:pointer;font-size:14px}
+.nav button:hover,.nav button.active{background:#28466b;color:white}
+.main{flex:1;min-width:0}
+.topbar{height:75px;background:white;border-bottom:1px solid #e5eaf1;display:flex;align-items:center;justify-content:space-between;padding:0 25px}
+.topbar button{padding:9px 13px;border:1px solid #ddd;background:white;border-radius:7px;cursor:pointer}
+.content{padding:28px}
+h1{font-size:25px;margin-bottom:8px}
+.muted{color:#718096;font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:25px 0}
+.card{background:white;padding:22px;border-radius:12px;border:1px solid #e8edf3}
+.card small{color:#718096}
+.card h2{font-size:27px;margin:13px 0 5px}
+.card .symbol{font-size:24px}
+.panel{background:white;border-radius:12px;border:1px solid #e8edf3;padding:22px;margin-top:20px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px}
+.primary{background:#16834b;color:white;border:0;border-radius:7px;padding:11px 16px;cursor:pointer}
+input,select{padding:11px;border:1px solid #d9e0e9;border-radius:7px;width:100%;margin:6px 0 14px}
+table{width:100%;border-collapse:collapse;min-width:550px}
+th,td{text-align:left;padding:14px;border-bottom:1px solid #edf0f4;font-size:13px}
+th{color:#718096;background:#f8fafc}
+.table-wrap{overflow-x:auto}
+.status{background:#dcfce7;color:#167343;padding:5px 9px;border-radius:20px}
+.page{display:none}
+.page.active{display:block}
+.form-box{max-width:550px}
+.menu-toggle{display:none}
+.footer{text-align:center;color:#8995a5;padding:25px;font-size:12px}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){
+.sidebar{display:none;position:fixed;z-index:10;top:0;bottom:0;left:0}
+.sidebar.open{display:block}
+.menu-toggle{display:block}
+.content{padding:18px 13px}
+.topbar{padding:0 13px}
+.cards{grid-template-columns:1fr 1fr;gap:10px}
+.card{padding:14px}
+.card h2{font-size:22px}
+h1{font-size:21px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar" id="sidebar">
+<div class="logo">BYSAM<span>.</span>STMS</div>
+<div class="nav-title">MAIN MENU</div>
+<div class="nav">
+<button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
+<button onclick="showPage('students',this)">👨‍🎓 Students</button>
+<button onclick="showPage('teachers',this)">👩‍🏫 Teachers</button>
+<button onclick="showPage('classes',this)">🏫 Classes & Subjects</button>
+<button onclick="showPage('attendance',this)">📋 Attendance</button>
+<button onclick="showPage('exams',this)">📝 Examinations</button>
+<button onclick="showPage('fees',this)">💳 Fees & Payments</button>
+<button onclick="showPage('reports',this)">📊 Reports</button>
+</div>
+<div class="nav-title">SYSTEM</div>
+<div class="nav">
+<button onclick="showPage('settings',this)">⚙️ Settings</button>
+</div>
+</aside>
+
+<main class="main">
+<header class="topbar">
+<div style="display:flex;align-items:center;gap:13px">
+<button class="menu-toggle" onclick="toggleMenu()">☰</button>
+<strong>BYSAM Student Management</strong>
+</div>
+<div><span>Administrator 👤</span></div>
+</header>
+
+<div class="content">
+
+<section class="page active" id="dashboard">
+<h1>Dashboard</h1>
+<p class="muted">Welcome to BYSAM Student Management System.</p>
+<div class="cards">
+<div class="card"><span class="symbol">👨‍🎓</span><br><small>Total Students</small><h2 id="studentCount">0</h2><small>Registered students</small></div>
+<div class="card"><span class="symbol">👩‍🏫</span><br><small>Total Teachers</small><h2>0</h2><small>Registered teachers</small></div>
+<div class="card"><span class="symbol">🏫</span><br><small>Total Classes</small><h2>0</h2><small>Active classes</small></div>
+<div class="card"><span class="symbol">💰</span><br><small>Fees Collected</small><h2>0 RWF</h2><small>Recorded payments</small></div>
+</div>
+<div class="panel">
+<h3>System Overview</h3>
+<p class="muted" style="margin-top:12px">Welcome! Use the navigation menu to manage your school information.</p>
+</div>
+</section>
+
+<section class="page" id="students">
+<div class="panel-head">
+<div><h1>Students Management</h1><p class="muted">Manage student registration and records.</p></div>
+<button class="primary" onclick="showPage('addStudent')">+ Add Student</button>
+</div>
+<div class="panel">
+<div class="table-wrap">
+<table>
+<thead><tr><th>Student Name</th><th>Student ID</th><th>Class</th><th>Gender</th></tr></thead>
+<tbody id="studentTable"><tr><td colspan="4">No students registered yet.</td></tr></tbody>
+</table>
+</div>
+</div>
+</section>
+
+<section class="page" id="addStudent">
+<div class="panel form-box">
+<h1>Register New Student</h1>
+<p class="muted">Enter the student's information below.</p>
+<form onsubmit="addStudent(event)">
+<label>Full Name</label><input id="fullName" required placeholder="Enter full name">
+<label>Student ID</label><input id="studentId" required placeholder="Enter student ID">
+<label>Class</label><input id="studentClass" required placeholder="Example: Senior 1">
+<label>Gender</label>
+<select id="gender" required><option value="">Select gender</option><option>Male</option><option>Female</option></select>
+<button class="primary" type="submit">Save Student</button>
+</form>
+</div>
+</section>
+
+<section class="page" id="teachers">
+<div class="panel"><h1>Teachers Management</h1><p class="muted">Teacher registration and records will be developed in the next stage.</p></div>
+</section>
+
+<section class="page" id="classes">
+<div class="panel"><h1>Classes & Subjects</h1><p class="muted">Manage school classes and subjects.</p></div>
+</section>
+
+<section class="page" id="attendance">
+<div class="panel"><h1>Attendance Management</h1><p class="muted">Daily student attendance module.</p></div>
+</section>
+
+<section class="page" id="exams">
+<div class="panel"><h1>Examinations & Results</h1><p class="muted">Manage examinations, marks and report cards.</p></div>
+</section>
+
+<section class="page" id="fees">
+<div class="panel"><h1>Fees & Payments</h1><p class="muted">Manage school fees and student payments.</p></div>
+</section>
+
+<section class="page" id="reports">
+<div class="panel"><h1>Reports</h1><p class="muted">School academic and financial reports.</p></div>
+</section>
+
+<section class="page" id="settings">
+<div class="panel"><h1>Settings</h1><p class="muted">System configuration.</p></div>
+</section>
+
+</div>
+<div class="footer">© 2026 BYSAM.STMS | Student Management System</div>
+</main>
+</div>
+
+<script>
+let students=JSON.parse(localStorage.getItem("bysamStudents")||"[]");
+
+function showPage(id,button){
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+const page=document.getElementById(id);
+if(page) page.classList.add("active");
+document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+if(button) button.classList.add("active");
+document.getElementById("sidebar").classList.remove("open");
+}
+
+function toggleMenu(){
+document.getElementById("sidebar").classList.toggle("open");
+}
+
+function addStudent(e){
+e.preventDefault();
+const student={
+name:document.getElementById("fullName").value,
+id:document.getElementById("studentId").value,
+className:document.getElementById("studentClass").value,
+gender:document.getElementById("gender").value
+};
+if(students.some(s=>s.id===student.id)){
+alert("This Student ID already exists.");
+return;
+}
+students.push(student);
+localStorage.setItem("bysamStudents",JSON.stringify(students));
+e.target.reset();
+updateStudents();
+showPage("students");
+alert("Student registered successfully!");
+}
+
+function updateStudents(){
+document.getElementById("studentCount").textContent=students.length;
+const table=document.getElementById("studentTable");
+table.innerHTML="";
+if(students.length===0){
+table.innerHTML='<tr><td colspan="4">No students registered yet.</td></tr>';
+return;
+}
+students.forEach(s=>{
+table.innerHTML+=`<tr><td>${escapeHTML(s.name)}</td><td>${escapeHTML(s.id)}</td><td>${escapeHTML(s.className)}</td><td>${escapeHTML(s.gender)}</td></tr>`;
+});
+}
+
+function escapeHTML(value){
+return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+updateStudents();
+</script>
+</body>
+</html>
