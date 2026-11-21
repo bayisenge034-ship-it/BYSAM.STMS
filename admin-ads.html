@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin – Advertising and Site Analytics | BYSAM.STMS</title>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<link rel="stylesheet" href="assets/site.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.tabs button,.row button,button.b{font:inherit;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;cursor:pointer}
+.tabs button.on,button.pri{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+button.bad{color:var(--bad)}
+.tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}
+.tile{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px}
+.tile b{display:block;font-size:26px;line-height:1.2}
+.tile span{font-size:13px;color:var(--mu)}
+.f label{display:block;margin:10px 0 3px;font-weight:600;font-size:14px}
+.f input,.f select,.f textarea{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit}
+.f .two{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+@media(max-width:600px){.f .two{grid-template-columns:1fr}}
+.pill{display:inline-block;border-radius:99px;padding:1px 9px;font-size:12px;font-weight:700;background:var(--soft);color:var(--ac)}
+.pill.off{background:rgba(120,120,120,.18);color:var(--mu)}.pill.warn{background:rgba(183,121,31,.2);color:var(--warn)}
+.msg{padding:10px 12px;border-radius:8px;margin:10px 0}.msg.err{background:rgba(179,38,30,.14);color:var(--bad)}.msg.ok{background:var(--soft);color:var(--ok)}
+.bars{display:flex;align-items:flex-end;gap:2px;height:120px;border-bottom:1px solid var(--bd);padding-top:6px}
+.bars i{flex:1;background:var(--ac);min-width:2px;border-radius:2px 2px 0 0;display:block}
+</style></head><body>
+<div class="flag"></div>
+<main><div class="wrap">
+<p class="crumbs"><a href="home.html">Public site</a> · <a href="index.html">School system</a></p>
+<h1>Advertising &amp; site analytics</h1>
+<p class="mu">Administrators only. This page is never linked from the public site and shows no advertising.</p>
+<div id="app"><p>Loading…</p></div>
+</div></main>
+<script src="assets/config.js"></script>
+<script>
+(function(){
+'use strict';
+var CFG=window.BYSAM_SITE,URL_=CFG.supabaseUrl,KEY=CFG.supabaseKey;
+/* same optional override the school app uses, so both share one Supabase session */
+try{var k=(localStorage.getItem('stmsSbKey')||'').trim();if(/^(sb_publishable_|eyJ)/.test(k))KEY=k;var u=(localStorage.getItem('stmsSbUrl')||'').trim();if(/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(u))URL_=u}catch(e){}
+var sb=window.supabase.createClient(URL_,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+var app=document.getElementById('app'),tab='stats',ads=[],settings={},editing=null,days=30,note=null;
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function $(i){return document.getElementById(i)}
+function msg(t,c){note={t:t,c:c||'ok'};var m=$('msg');if(m)m.innerHTML='<div class="msg '+note.c+'" role="status">'+esc(t)+'</div>'}
+function explain(e){var m=(e&&e.message)||String(e);if(/does not exist|schema cache|Could not find the function/i.test(m))return 'The database migration has not been applied yet. Run supabase/migrations/20261118_public_site_ads_analytics.sql in the Supabase SQL editor, then reload.';if(/Administrator access required|row-level security|permission denied/i.test(m))return 'Permission denied: administrator access is required.';return m}
+var POS={header:'Header banner',sidebar:'Sidebar',in_content:'In-content',footer:'Footer banner'};
+var TYPES={company:'Company',educational_organization:'Educational organisation',other:'Other'};
+
+/* ---------- auth gate ---------- */
+async function start(){
+  var s=(await sb.auth.getSession()).data.session;
+  if(!s)return loginView();
+  var r=await sb.rpc('is_admin');
+  if(r.error||r.data!==true){app.innerHTML='<div class="msg err">This account ('+esc(s.user.email)+') is not an administrator.</div><p><button class="b" id="so">Sign out</button> <a href="index.html">Back to the school system</a></p>';$('so').onclick=async function(){await sb.auth.signOut();start()};return}
+  await loadAll();render(s.user.email);
+}
+function loginView(){
+  app.innerHTML='<div class="card f" style="max-width:420px"><h2 style="margin-top:0">Administrator sign in</h2><p class="mu">Use the same email and password as in the school system.</p><label for="em">Email</label><input id="em" type="email" autocomplete="username"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"><p><button class="b pri" id="li">Sign in</button></p><div id="msg"></div></div>';
+  $('li').onclick=async function(){var r=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(r.error)return msg(r.error.message,'err');start()};
+  $('pw').onkeydown=function(e){if(e.key==='Enter')$('li').click()};
+}
+async function loadAll(){
+  var a=await sb.from('site_ads').select('*').order('created_at',{ascending:false});
+  var s=await sb.from('site_settings').select('key,value');
+  if(a.error||s.error){note={t:explain(a.error||s.error),c:'err'};ads=[];settings={};return}
+  ads=a.data;settings={};s.data.forEach(function(x){settings[x.key]=x.value});
+}
+
+/* ---------- views ---------- */
+function render(email){
+  var h='<p>Signed in as <b>'+esc(email)+'</b> <button class="b" id="so">Sign out</button></p>';
+  h+='<div class="tabs" role="tablist">'+[['stats','Analytics'],['ads','Advertisements'],['set','Ad settings']].map(function(t){return'<button role="tab" class="'+(tab===t[0]?'on':'')+'" data-t="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div><div id="msg">'+(note?'<div class="msg '+note.c+'">'+esc(note.t)+'</div>':'')+'</div><div id="body"></div>';
+  app.innerHTML=h;
+  $('so').onclick=async function(){await sb.auth.signOut();start()};
+  [].forEach.call(app.querySelectorAll('[data-t]'),function(b){b.onclick=function(){tab=b.getAttribute('data-t');editing=null;note=null;render(email)}});
+  if(tab==='stats')statsView();else if(tab==='ads')adsView();else setView();
+}
+function status(a){
+  if(!settings.sponsored_ads_enabled)return['Sponsored ads switched off','warn'];
+  if(!a.is_active)return['Inactive','off'];
+  var t=new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Kigali'});
+  if(a.start_date&&a.start_date>t)return['Scheduled',''];
+  if(a.end_date&&a.end_date<t)return['Ended','off'];
+  return['Live',''];
+}
+function adsView(){
+  var b=$('body');
+  if(editing!==null){return formView(b)}
+  var h='<p><button class="b pri" id="new">+ New advertisement</button></p>';
+  if(!ads.length)h+='<p class="mu">No advertisements yet. Sponsored banners appear on public learning pages only, and only while the “Sponsored ads” switch in <em>Ad settings</em> is on.</p>';
+  else h+='<div class="tw"><table class="t"><tr><th>Title / sponsor</th><th>Position</th><th>Dates</th><th>Status</th><th></th></tr>'+ads.map(function(a){var s=status(a);return'<tr><td><b>'+esc(a.title)+'</b><br><span class="mu">'+esc(a.sponsor_name)+' · '+esc(TYPES[a.sponsor_type]||a.sponsor_type)+'</span></td><td>'+esc(POS[a.position]||a.position)+'</td><td>'+esc(a.start_date||'any')+' → '+esc(a.end_date||'open')+'</td><td><span class="pill '+s[1]+'">'+esc(s[0])+'</span></td><td style="white-space:nowrap"><button class="b" data-a="tg" data-id="'+esc(a.id)+'">'+(a.is_active?'Deactivate':'Activate')+'</button> <button class="b" data-a="ed" data-id="'+esc(a.id)+'">Edit</button> <button class="b bad" data-a="del" data-id="'+esc(a.id)+'">Delete</button></td></tr>'}).join('')+'</table></div>';
+  b.innerHTML=h;
+  if($('new'))$('new').onclick=function(){editing={};adsView()};
+  [].forEach.call(b.querySelectorAll('[data-a]'),function(x){x.onclick=function(){act(x.getAttribute('data-a'),x.getAttribute('data-id'))}});
+}
+async function act(a,id){
+  var ad=ads.filter(function(x){return x.id===id})[0];if(!ad)return;
+  if(a==='ed'){editing=ad;return adsView()}
+  if(a==='tg'){var r=await sb.from('site_ads').update({is_active:!ad.is_active}).eq('id',id);if(r.error)return msg(explain(r.error),'err');await loadAll();adsView();msg(ad.is_active?'Advertisement deactivated.':'Advertisement activated.');return}
+  if(a==='del'){if(!confirm('Delete “'+ad.title+'”? Its recorded impressions and clicks stay in the analytics but this cannot be undone.'))return;var d=await sb.from('site_ads').delete().eq('id',id);if(d.error)return msg(explain(d.error),'err');await loadAll();adsView();msg('Advertisement deleted.')}
+}
+function formView(b){
+  var a=editing,isNew=!a.id;
+  function sel(o,v){return Object.keys(o).map(function(k){return'<option value="'+k+'"'+(k===v?' selected':'')+'>'+esc(o[k])+'</option>'}).join('')}
+  b.innerHTML='<div class="card f"><h2 style="margin-top:0">'+(isNew?'New':'Edit')+' advertisement</h2>'+
+  '<label for="f_title">Headline *</label><input id="f_title" maxlength="120" value="'+esc(a.title||'')+'">'+
+  '<div class="two"><div><label for="f_sp">Sponsor name *</label><input id="f_sp" maxlength="120" value="'+esc(a.sponsor_name||'')+'"></div><div><label for="f_ty">Sponsor type</label><select id="f_ty">'+sel(TYPES,a.sponsor_type||'company')+'</select></div></div>'+
+  '<label for="f_img">Banner image URL (https)</label><input id="f_img" inputmode="url" placeholder="https://…" value="'+esc(a.image_url||'')+'">'+
+  '<label for="f_alt">Image description (alt text)</label><input id="f_alt" maxlength="160" value="'+esc(a.alt_text||'')+'">'+
+  '<label for="f_body">Short text (max 200 characters; required if there is no image)</label><textarea id="f_body" maxlength="200" rows="2">'+esc(a.body_text||'')+'</textarea>'+
+  '<label for="f_url">Destination URL (https) *</label><input id="f_url" inputmode="url" placeholder="https://…" value="'+esc(a.target_url||'')+'">'+
+  '<div class="two"><div><label for="f_pos">Position *</label><select id="f_pos">'+sel(POS,a.position||'sidebar')+'</select></div><div><label>&nbsp;</label><label style="font-weight:400"><input type="checkbox" id="f_act" style="width:auto"'+(a.is_active?' checked':'')+'> Active</label></div></div>'+
+  '<div class="two"><div><label for="f_sd">Campaign start date</label><input id="f_sd" type="date" value="'+esc(a.start_date||'')+'"></div><div><label for="f_ed">Campaign end date</label><input id="f_ed" type="date" value="'+esc(a.end_date||'')+'"></div></div>'+
+  '<label for="f_no">Internal notes (approval reference, contact – never shown publicly)</label><textarea id="f_no" maxlength="1000" rows="2">'+esc(a.notes||'')+'</textarea>'+
+  '<h3>Preview</h3><div id="pv"></div>'+
+  '<p><button class="b pri" id="sv">Save</button> <button class="b" id="cn">Cancel</button></p></div>';
+  function val(i){return $(i).value.trim()}
+  function prev(){var img=/^https:\/\/\S+$/i.test(val('f_img'))?'<img src="'+esc(val('f_img'))+'" alt="'+esc(val('f_alt'))+'" style="max-height:120px">':'';$('pv').innerHTML='<div class="ad"><span class="lbl">Sponsored</span><a href="#" onclick="return false">'+img+'<b>'+esc(val('f_title')||'Headline')+'</b>'+(val('f_body')?'<span> – '+esc(val('f_body'))+'</span>':'')+'<span class="mu"> ('+esc(val('f_sp')||'Sponsor')+')</span></a></div>'}
+  ['f_title','f_sp','f_img','f_alt','f_body'].forEach(function(i){$(i).oninput=prev});prev();
+  $('cn').onclick=function(){editing=null;adsView()};
+  $('sv').onclick=async function(){
+    var o={title:val('f_title'),sponsor_name:val('f_sp'),sponsor_type:val('f_ty'),image_url:val('f_img')||null,alt_text:val('f_alt')||null,body_text:val('f_body')||null,target_url:val('f_url'),position:val('f_pos'),is_active:$('f_act').checked,start_date:val('f_sd')||null,end_date:val('f_ed')||null,notes:val('f_no')||null};
+    var https=/^https:\/\/\S+$/i;
+    if(!o.title||!o.sponsor_name)return msg('Headline and sponsor name are required.','err');
+    if(!https.test(o.target_url))return msg('The destination URL must start with https://','err');
+    if(o.image_url&&!https.test(o.image_url))return msg('The image URL must start with https://','err');
+    if(!o.image_url&&!o.body_text)return msg('Add a banner image or some short text.','err');
+    if(o.start_date&&o.end_date&&o.end_date<o.start_date)return msg('The end date cannot be before the start date.','err');
+    var r=isNew?await sb.from('site_ads').insert(o):await sb.from('site_ads').update(o).eq('id',a.id);
+    if(r.error)return msg(explain(r.error),'err');
+    editing=null;await loadAll();adsView();msg('Advertisement saved.');
+  };
+}
+function setView(){
+  var s=settings,sl=s.adsense_slot_ids||{};
+  $('body').innerHTML='<div class="card f"><h2 style="margin-top:0">Sponsored banners</h2><label style="font-weight:400"><input type="checkbox" id="s_sp" style="width:auto"'+(s.sponsored_ads_enabled===true?' checked':'')+'> Show active sponsored banners on public learning pages</label>'+
+  '<h2>Google AdSense</h2><p class="mu">Leave this OFF until Google has approved the website. When on, the AdSense script loads on public learning pages only – never in the school system.</p>'+
+  '<label for="s_pub">Publisher ID (placeholder format: ca-pub-0000000000000000)</label><input id="s_pub" value="'+esc(s.adsense_publisher_id||'')+'" placeholder="ca-pub-0000000000000000" autocomplete="off">'+
+  '<label style="font-weight:400"><input type="checkbox" id="s_ap" style="width:auto"> Google has approved this website for AdSense</label>'+
+  '<label style="font-weight:400"><input type="checkbox" id="s_ad" style="width:auto"'+(s.adsense_enabled===true?' checked':'')+'> Enable AdSense</label>'+
+  '<h3>Optional ad unit IDs (digits only; leave blank to rely on Auto ads)</h3><div class="two">'+Object.keys(POS).map(function(k){return'<div><label for="sl_'+k+'">'+esc(POS[k])+'</label><input id="sl_'+k+'" inputmode="numeric" value="'+esc(sl[k]||'')+'"></div>'}).join('')+'</div>'+
+  '<p><button class="b pri" id="ss">Save settings</button></p></div>';
+  $('ss').onclick=async function(){
+    var pub=$('s_pub').value.trim(),en=$('s_ad').checked;
+    if(pub&&!/^ca-pub-\d{16}$/.test(pub))return msg('The publisher ID must look like ca-pub- followed by 16 digits.','err');
+    if(en&&!pub)return msg('Enter a publisher ID before enabling AdSense.','err');
+    if(en&&!$('s_ap').checked&&s.adsense_enabled!==true)return msg('Tick the box to confirm Google has approved this website before enabling AdSense.','err');
+    var slots={},bad=false;Object.keys(POS).forEach(function(k){var v=$('sl_'+k).value.trim();if(v){if(!/^\d{6,15}$/.test(v))bad=true;else slots[k]=v}});
+    if(bad)return msg('Ad unit IDs must be 6–15 digits.','err');
+    var rows=[{key:'sponsored_ads_enabled',value:$('s_sp').checked},{key:'adsense_enabled',value:en},{key:'adsense_publisher_id',value:pub},{key:'adsense_slot_ids',value:slots}];
+    var r=await sb.from('site_settings').upsert(rows,{onConflict:'key'});
+    if(r.error)return msg(explain(r.error),'err');
+    await loadAll();setView();msg('Settings saved.');
+  };
+}
+async function statsView(){
+  var b=$('body');b.innerHTML='<p>Loading…</p>';
+  var r=await sb.rpc('admin_site_analytics',{p_days:days});
+  if(r.error){b.innerHTML='';return msg(explain(r.error),'err')}
+  var d=r.data,t=d.totals;
+  var h='<div class="row" style="display:flex;gap:8px;align-items:center"><label for="dy">Period</label><select id="dy">'+[7,30,90,365].map(function(n){return'<option value="'+n+'"'+(n===days?' selected':'')+'>Last '+n+' days</option>'}).join('')+'</select></div>';
+  h+='<div class="tiles"><div class="tile"><b>'+t.page_views+'</b><span>Public page views</span></div><div class="tile"><b>'+t.downloads+'</b><span>Resource downloads</span></div><div class="tile"><b>'+t.ad_impressions+'</b><span>Ad impressions (sponsored)</span></div><div class="tile"><b>'+t.ad_clicks+'</b><span>Ad clicks (sponsored)</span></div></div>';
+  if(!t.page_views&&!t.downloads&&!t.ad_impressions)h+='<div class="msg ok">No activity has been recorded in this period yet. Figures appear only when real visitors use the public pages; nothing here is estimated or simulated.</div>';
+  var max=Math.max.apply(null,d.daily_views.map(function(x){return x.views}).concat([1]));
+  h+='<h2>Daily page views</h2>'+(d.daily_views.length?'<div class="bars" role="img" aria-label="Daily page views">'+d.daily_views.map(function(x){return'<i title="'+esc(x.day)+': '+x.views+'" style="height:'+Math.max(2,Math.round(x.views/max*100))+'%"></i>'}).join('')+'</div><p class="mu">'+esc(d.daily_views[0].day)+' → '+esc(d.daily_views[d.daily_views.length-1].day)+' (peak '+max+')</p>':'<p class="mu">No page views yet.</p>');
+  h+='<h2>Most visited pages</h2>'+tbl(['Page','Views'],d.top_pages.map(function(x){return[x.path,x.views]}));
+  h+='<h2>Resource downloads</h2>'+tbl(['Resource','Downloads'],d.downloads.map(function(x){return[x.resource,x.downloads]}));
+  h+='<h2>Advertisement campaign performance</h2>'+tbl(['Advertisement','Sponsor','Position','Impressions','Clicks','CTR'],d.ads.map(function(x){return[x.title+(x.is_active?'':' (inactive)'),x.sponsor,POS[x.position]||x.position,x.impressions,x.clicks,x.impressions>0?(x.clicks/x.impressions*100).toFixed(2)+'%':'–']}));
+  h+='<p class="mu">Counts are recorded by visitors’ browsers and exclude visitors who send Do Not Track and most automated bots, so they can differ from Google’s figures. AdSense earnings are not recorded here – read revenue in your AdSense account.</p>';
+  b.innerHTML=h;$('dy').onchange=function(){days=+this.value;statsView()};
+}
+function tbl(head,rows){if(!rows.length)return'<p class="mu">No data yet.</p>';return'<div class="tw"><table class="t"><tr>'+head.map(function(x){return'<th>'+esc(x)+'</th>'}).join('')+'</tr>'+rows.map(function(r){return'<tr>'+r.map(function(c){return'<td>'+esc(c)+'</td>'}).join('')+'</tr>'}).join('')+'</table></div>'}
+
+start().catch(function(e){app.innerHTML='<div class="msg err">'+esc(explain(e))+'</div>'});
+})();
+</script>
+</body></html>

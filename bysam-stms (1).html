@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="rw"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BYSAM.STMS</title>
+<style>
+:root{--bg:#f6f7f4;--cd:#fff;--tx:#1d2420;--mu:#66706a;--ac:#20603D;--ax:#fff;--bd:#dfe3dc;--bad:#b3261e;--wn:#b7791f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141815;--cd:#1c211d;--tx:#e8ece8;--mu:#9aa59e;--ac:#4cc38a;--ax:#0d1a12;--bd:#2c342e;--bad:#ff8a80;--wn:#f0b75a}}
+:root[data-theme="dark"]{--bg:#141815;--cd:#1c211d;--tx:#e8ece8;--mu:#9aa59e;--ac:#4cc38a;--ax:#0d1a12;--bd:#2c342e;--bad:#ff8a80;--wn:#f0b75a}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:14px}
+.flag{height:6px;background:linear-gradient(90deg,#00A1DE 50%,#FAD201 50% 75%,#20603D 75%);border-radius:3px;margin-bottom:10px}
+h1{font-size:20px;margin:4px 0 4px}h2{font-size:16px;margin:0 0 10px}
+.demo{background:var(--cd);border:1px solid var(--wn);border-radius:10px;padding:9px 12px;margin:10px 0;font-size:13px}
+.c{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
+button,select,input{font:inherit;color:var(--tx)}
+button{background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;cursor:pointer}
+button.pri{background:var(--ac);color:var(--ax);border-color:var(--ac)}
+button.bad{color:var(--bad)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+select,input,textarea{background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:6px 8px}
+input[type=number]{width:90px}
+textarea{width:100%;min-height:110px}
+.sc{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:460px}
+th,td{border-bottom:1px solid var(--bd);padding:6px 8px;text-align:left;white-space:nowrap}
+th{font-size:12px;color:var(--mu);font-weight:600}
+.mu{color:var(--mu);font-size:13px}.bad{color:var(--bad)}.b{font-weight:700}
+.tg{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);margin-left:6px;vertical-align:middle}
+.tg.sent{color:var(--wn);border-color:var(--wn)}.tg.ok{color:var(--ac);border-color:var(--ac)}.tg.rej{color:var(--bad);border-color:var(--bad)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0 12px}
+</style></head><body><main>
+<div class="flag"></div>
+<h1>BYSAM.STMS – uburyo bushya bw’ibigo</h1>
+<div class="bar">
+<label>Uruhare:
+<select id="rl" onchange="S.role=this.value;go()">
+<option value="admin">Admin (wowe)</option><option value="head">Headteacher</option><option value="ct">Class teacher</option><option value="teacher">Teacher</option></select></label>
+<label id="tw">Umwarimu:
+<select id="me" onchange="S.me=this.value;go()"></select></label>
+</div>
+<div id="v"></div>
+</main>
+<script>
+const P=["Samuel","Alice","Eric","Claudine"];
+const S={role:"admin",me:"Samuel",ct:"Claudine",pr:{t:3000,y:5000},
+sc:[{n:"GS KABUSANZA",p:"Umwaka",s:"active",u:"2027-11-09"},{n:"GS Nyarurama",p:"Amezi 3",s:"pending",u:"—"}],
+st:["UWASE Aline","NSENGIMANA Eric","MUKAMANA Claudine","HABIMANA Jean","INGABIRE Divine","NIYONZIMA Patrick"],
+sb:[{n:"Physics",t:"Samuel",m:{},s:"draft",r:""},{n:"Mathematics",t:"Alice",m:{0:31,1:24,2:35,3:18,4:29,5:22},s:"sent",r:""},{n:"Chemistry",t:"Eric",m:{},s:"draft",r:""}]};
+const $=id=>document.getElementById(id);
+const lab={draft:"Irimo gukorwa",sent:"Yoherejwe",ok:"Yemewe",rej:"Yanzwe"};
+const opt=(a,v)=>a.map(t=>`<option ${t===v?"selected":""}>${t}</option>`).join("");
+
+function go(){
+ $("rl").value=S.role;
+ $("tw").style.display=S.role==="teacher"?"":"none";
+ $("me").innerHTML=opt(P.slice(0,3),S.me);
+ $("v").innerHTML=({admin:vA,head:vH,ct:vC,teacher:vT})[S.role]();
+}
+
+/* ADMIN */
+function vA(){
+ const sv=3*S.pr.t-S.pr.y;
+ return `<div class="c"><h2>Ibiciro (ushobora kubihindura)</h2>
+ <div class="row"><label>Amezi 3 (RWF)<br><input id="p1" type="number" value="${S.pr.t}"></label>
+ <label>Umwaka (RWF)<br><input id="p2" type="number" value="${S.pr.y}"></label>
+ <button class="pri" onclick="sp()">Bika ibiciro</button></div>
+ <p class="mu">Kwishyura umwaka bizigama ${sv.toLocaleString()} RWF ugereranyije no kwishyura amezi 3 gatatu.</p></div>
+ <div class="c"><h2>Ibigo</h2><div class="sc"><table>
+ <tr><th>Ikigo<th>Igihe<th>Igiciro<th>Imiterere<th>Rirangira<th></tr>
+ ${S.sc.map((x,i)=>`<tr><td>${x.n}<td>${x.p}<td>${(x.p==="Umwaka"?S.pr.y:S.pr.t).toLocaleString()} RWF<td>${x.s==="active"?"Gikora":x.s==="pending"?"Gitegereje kwishyura":"Cyafunzwe"}<td>${x.u}<td>${x.s==="active"?`<button class="bad" onclick="sc(${i},0)">Funga</button>`:`<button class="pri" onclick="sc(${i},1)">Emeza ko yishyuye</button>`}</tr>`).join("")}
+ </table></div></div>`;
+}
+function sp(){const a=+$("p1").value,b=+$("p2").value;if(a>0&&b>0){S.pr.t=a;S.pr.y=b;go();alert("Ibiciro bishya byabitswe.")}else alert("Andika ibiciro byemewe.")}
+function sc(i,on){const x=S.sc[i];if(on){const d=new Date();d.setMonth(d.getMonth()+(x.p==="Umwaka"?12:3));x.u=d.toISOString().slice(0,10);x.s="active"}else x.s="off";go()}
+
+/* HEADTEACHER */
+function vH(){
+ return `<div class="c"><h2>Abanyeshuri ba S2A (${S.st.length})</h2>
+ <div class="row"><input id="ns" placeholder="Izina ry’umunyeshuri"><button class="pri" onclick="as()">Ongeraho umunyeshuri</button></div>
+ <p class="mu">${S.st.join(", ")}</p></div>
+ <div class="c"><h2>Class teacher wa S2A</h2><select onchange="S.ct=this.value;go()">${opt(P,S.ct)}</select></div>
+ <div class="c"><h2>Assigned lessons (S2A)</h2><div class="sc"><table><tr><th>Isomo<th>Umwarimu wigisha</tr>
+ ${S.sb.map((x,k)=>`<tr><td>${x.n}<td><select onchange="S.sb[${k}].t=this.value;go()">${opt(P.slice(0,3),x.t)}</select></tr>`).join("")}
+ </table></div></div>`;
+}
+function as(){const v=$("ns").value.trim();if(!v)return alert("Andika izina.");S.st.push(v);S.sb.forEach(x=>{});go()}
+
+/* TEACHER */
+function vT(){
+ const L=S.sb.filter(x=>x.t===S.me);
+ if(!L.length)return `<div class="c">Nta somo uhawe. Headteacher agomba kuguha isomo.</div>`;
+ return L.map(x=>{
+  const k=S.sb.indexOf(x),ed=x.s==="draft"||x.s==="rej";
+  return `<div class="c"><h2>${x.n} · S2A · Midterm Test (/40)<span class="tg ${x.s}">${lab[x.s]}</span></h2>
+  ${x.r?`<p class="bad">Class teacher yanze aya manota: ${x.r}. Kosora wongere wohereze.</p>`:""}
+  <div class="sc"><table><tr><th>Umunyeshuri<th>Amanota /40</tr>
+  ${S.st.map((n,i)=>`<tr><td>${n}<td><input type="number" min="0" max="40" ${ed?"":"disabled"} value="${x.m[i]??""}" onchange="mk(${k},${i},this.value)"></tr>`).join("")}
+  </table></div>
+  ${ed?`<p><button class="pri" onclick="snd(${k})">Ohereza ku class teacher</button></p>`:`<p class="mu">Amanota afunzwe. Ategereje class teacher.</p>`}</div>`}).join("");
+}
+function mk(k,i,v){if(v==="")delete S.sb[k].m[i];else S.sb[k].m[i]=+v}
+function snd(k){const x=S.sb[k];for(let i=0;i<S.st.length;i++){const v=x.m[i];if(v===undefined||v<0||v>40)return alert("Buri munyeshuri agomba kugira amanota hagati ya 0 na 40.")}x.s="sent";x.r="";go()}
+
+/* CLASS TEACHER */
+function calc(){
+ const a=S.sb.every(x=>x.s==="ok");
+ const r=S.st.map((n,i)=>{const t=S.sb.reduce((s,x)=>s+(x.s==="ok"?(+x.m[i]||0):0),0);return{n,i,t,p:Math.round(t/(40*S.sb.length)*100)}});
+ r.forEach(q=>q.k=a?1+r.filter(z=>z.t>q.t).length:"—");
+ return{a,r};
+}
+function vC(){
+ const {a,r}=calc();
+ const okS=S.sb.filter(x=>x.s==="ok");
+ const an=okS.map(x=>{const v=S.st.map((_,i)=>+x.m[i]||0);const avg=v.reduce((s,y)=>s+y,0)/v.length;return{n:x.n,avg:avg.toFixed(1),mx:Math.max(...v),mn:Math.min(...v),pass:v.filter(y=>y>=20).length}});
+ return `<div class="c"><h2>Ishuri rya ${S.ct}: S2A</h2><div class="sc"><table><tr><th>Isomo<th>Umwarimu<th>Imiterere<th></tr>
+ ${S.sb.map((x,k)=>`<tr><td>${x.n}<td>${x.t}<td>${lab[x.s]}<td>${x.s==="sent"?`<button class="pri" onclick="S.sb[${k}].s='ok';go()">Emeza</button> <button class="bad" onclick="rj(${k})">Anga</button>`:""}</tr>`).join("")}
+ </table></div></div>
+ <div class="c"><h2>Amanota y’ishuri ryose</h2>
+ ${a?"":`<p class="mu">Umwanya (ranking) uzagaragara amasomo yose namara kwemerwa. Amasomo atari yemerwa ntabarwa.</p>`}
+ <div class="sc"><table><tr><th>Umunyeshuri${S.sb.map(x=>`<th>${x.n}`).join("")}<th>Total<th>%<th>Umwanya</tr>
+ ${r.map(q=>`<tr><td>${q.n}${S.sb.map(x=>`<td>${x.s==="ok"?x.m[q.i]:"—"}`).join("")}<td class="b">${q.t}<td>${a?q.p+"%":"—"}<td class="b">${q.k}</tr>`).join("")}
+ </table></div></div>
+ <div class="c"><h2>Isesengura (amasomo yemewe)</h2>
+ ${an.length?`<div class="sc"><table><tr><th>Isomo<th>Impuzandengo<th>Menshi<th>Make<th>Batsinze (≥50%)</tr>${an.map(x=>`<tr><td>${x.n}<td>${x.avg}<td>${x.mx}<td>${x.mn}<td>${x.pass} kuri ${S.st.length}</tr>`).join("")}</table></div>`:`<p class="mu">Emeza isomo rimwe cyangwa menshi kugira ngo isesengura rigaragare.</p>`}
+ <p><button class="pri" onclick="rep()">Tegura raporo (CSV)</button></p><div id="rp"></div></div>`;
+}
+function rj(k){const t=prompt("Andika impamvu wanze aya manota:");if(t&&t.trim()){S.sb[k].s="rej";S.sb[k].r=t.trim();go()}}
+function rep(){
+ const {a,r}=calc();
+ const L=[["Umunyeshuri",...S.sb.map(x=>x.n),"Total","%","Umwanya"].join(",")];
+ r.forEach(q=>L.push([`"${q.n}"`,...S.sb.map(x=>x.s==="ok"?x.m[q.i]:""),q.t,a?q.p:"",q.k].join(",")));
+ $("rp").innerHTML=`<p class="mu">Kopera iyi raporo uyishyire muri Excel. Muri sisitemu nyayo hazaba akabuto ko gukurura PDF na Excel.</p><textarea readonly onfocus="this.select()">${L.join("\n")}</textarea>`;
+}
+go();
+</script></body></html>
