@@ -59,7 +59,7 @@ a.bt{display:inline-block;background:var(--card);border:1px solid var(--bd);bord
 nav#nav{position:fixed;top:0;left:0;bottom:0;width:250px;max-width:80vw;margin:0;padding:calc(16px + env(safe-area-inset-top,0px)) 12px 16px;background:var(--card);border-right:1px solid var(--bd);flex-direction:column;flex-wrap:nowrap;overflow-y:auto;transform:translateX(-105%);transition:transform .2s;z-index:60;box-shadow:2px 0 12px rgba(0,0,0,.15)}
 nav#nav.open{transform:none}nav#nav button{text-align:left;width:100%;padding:11px 12px}
 #ov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:55;display:none}#ov.open{display:block}
-</style></head><body><main>
+</style><style>/*hbfix*/#hb{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:44px;height:44px;background:#1f6b45!important;border:1px solid #0f3d27!important;border-radius:8px;cursor:pointer;padding:0}#hb i{display:block!important;width:24px;height:3px;background:#fff!important;border-radius:2px}</style></head><body><main>
 <div class="flag"></div>
 <div class="top"><button id="hb" onclick="menu()" aria-label="Open menu" style="display:none"><i></i><i></i><i></i></button><h1>BYSAM.STMS</h1></div>
 <div class="row mu" id="ub"></div><nav id="nav"></nav><div id="ov" onclick="closeMenu()"></div><div id="v"></div>
@@ -97,19 +97,20 @@ function pick(){if(!C()&&db.classes.length)S.cls=db.classes[0].id;
 function menu(){var o=document.getElementById('nav').classList.toggle('open');document.getElementById('ov').classList.toggle('open',o)}
 function closeMenu(){document.getElementById('nav').classList.remove('open');document.getElementById('ov').classList.remove('open')}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMenu()});
-function nav(){$('hb').style.display='flex';var t=[['dash','Dashboard'],['prof','Profile'],['setup','Setup'],['stu','Students'],['marks','Marks'],['att','Attendance'],['ntf','Notify'],['ana','Analysis'],['cert','Certificates'],['rep','Reports'],['bak','Backup']];
+function nav(){$('hb').style.display='flex';var t=[['dash','Dashboard'],['prof','Profile'],['setup','Setup'],['stu','Students'],['marks','Marks'],['att','Attendance'],['ntf','Notify'],['ana','Analysis'],['cert','Certificates'],['exm','Exams'],['rep','Reports'],['bak','Backup']];
  if(window.cloud&&cloud.isAdmin){t.push(['cmb','Combined marks']);t.push(['adm','Admin'])}$('nav').innerHTML=t.map(function(x){return'<button class="'+(S.tab===x[0]?'on':'')+'" onclick="S.tab=\''+x[0]+'\';go()">'+x[1]+'</button>'}).join('')}
 function go(){closeMenu();
+ if(/^#exam=/.test(location.hash)){return exStudent()}
  if(AUTH==='wait'){$('nav').innerHTML='';$('hb').style.display='none';$('ub').innerHTML='';$('v').innerHTML='<div class="card">Loading…</div>';return}
  if(AUTH==='sbauth'){$('nav').innerHTML='';$('hb').style.display='none';$('ub').innerHTML='';$('v').innerHTML=sbAuthHTML();return}
  if(AUTH==='sbreset'){$('nav').innerHTML='';$('hb').style.display='none';$('ub').innerHTML='';$('v').innerHTML=sbResetHTML();return}
  if(AUTH==='lout'){$('nav').innerHTML='';$('hb').style.display='none';$('ub').innerHTML='';$('v').innerHTML=sbKeyCard()+lAuthHTML();return}
  if(AUTH==='out'){$('nav').innerHTML='';$('hb').style.display='none';$('ub').innerHTML='';$('v').innerHTML='<div class="card"><h2>Sign in</h2><p>Sign in with your Gmail account to open your own classes, marks and attendance from any phone or computer.</p><button class="pri" onclick="cloud.login().catch(function(e){alert(\'Sign-in failed: \'+e.message)})">Sign in with Google</button></div>';return}
- if(AUTH==='pending'||AUTH==='blocked'){$('nav').innerHTML='';$('hb').style.display='none';$('ub').innerHTML='';$('v').innerHTML='<div class="card"><h2>'+(AUTH==='pending'?'Waiting for approval':'Access not allowed')+'</h2><p>'+(AUTH==='pending'?'Your account ('+esc(cloud.user.email||'')+') is registered. The administrator must approve it before you can use the system. Please try again later.':'Your account is not approved. Please contact the administrator.')+'</p><button class="pri" onclick="window.dispatchEvent(new Event(\'authchange\'))">Check again</button> <button onclick="cloud.logout()">Sign out</button></div>';return}
- $('ub').innerHTML=AUTH==='in'?esc(cloud.user.email||'')+(cloud.isAdmin?' <b>(Admin)</b>':'')+' <button onclick="cloud.logout()">Sign out</button> <span id="sv">'+esc(ST)+'</span>':(LU?'Signed in as <b>'+esc(LU)+'</b> <button onclick="lOut()">Sign out</button> <span class="mu">Data is saved in this browser only – use the Backup tab.</span>':'<b class="bad">Not connected – data is saved in this browser only.</b> '+esc(window.cloudWhy||''));
+ if(AUTH==='pending'||AUTH==='blocked'){$('nav').innerHTML='';$('hb').style.display='none';$('ub').innerHTML='';$('v').innerHTML='<div class="card"><h2>'+(AUTH==='pending'?'Waiting for approval':'Access not allowed')+'</h2><p>'+(AUTH==='pending'?'Your account ('+esc(cloud.user.email||'')+') is registered. The administrator must approve it before you can use the system. Please try again later.':'Your account is not approved. Please contact the administrator.')+'</p><button class="pri" onclick="window.dispatchEvent(new Event(\'authchange\'))">Check again</button> <button onclick="cloud.logout().catch(function(e){alert(\'Sign-out failed: \'+e.message)})">Sign out</button></div>';return}
+ $('ub').innerHTML=AUTH==='in'?esc(cloud.user.email||'')+(cloud.isAdmin?' <b>(Admin)</b>':'')+' <button onclick="cloud.logout().catch(function(e){alert(\'Sign-out failed: \'+e.message)})">Sign out</button> <span id="sv">'+esc(ST)+'</span>':(LU?'Signed in as <b>'+esc(LU)+'</b> <button onclick="lOut()">Sign out</button> <span class="mu">Data is saved in this browser only – use the Backup tab.</span>':'<b class="bad">Not connected – data is saved in this browser only.</b> '+esc(window.cloudWhy||''));
  if(!db.profile)S.tab='prof';
  if(db.profile&&db.subjects.some(function(x){return x.id===db.profile.sub}))S.sub=db.profile.sub;else if(!SB())S.sub=db.subjects[0]?db.subjects[0].id:'';
- nav();$('v').innerHTML=({dash:dash,adm:adm,cmb:cmb,ntf:notify,prof:function(){return prof()+accCard()},setup:setup,stu:stu,marks:marks,att:att,ana:ana,cert:cert,rep:repTab,bak:bak})[S.tab]();if(S.tab==='ana')drawCharts();if(S.tab==='dash')drawDash()}
+ nav();$('v').innerHTML=({dash:dash,adm:adm,cmb:cmb,ntf:notify,prof:function(){return prof()+accCard()},setup:setup,stu:stu,marks:marks,att:att,ana:ana,cert:cert,rep:repTab,bak:bak,exm:exm})[S.tab]();if(S.tab==='exm')exmLoad();if(S.tab==='ana')drawCharts();if(S.tab==='dash')drawDash()}
 /* PROFILE */
 function prof(){var p=db.profile||{};
  return'<div class="card"><h2>'+(db.profile?'Teacher profile':'Register as a teacher')+'</h2><div class="row"><input id="pn" placeholder="Your full name" value="'+esc(p.name||S.pn||'')+'"><input id="ps" placeholder="School name" value="'+esc(p.school||'')+'"></div><div class="row"><label class="mu">Academic year <input id="py" style="width:130px" placeholder="2026-2027" value="'+esc(p.year||(new Date().getFullYear()+'-'+(new Date().getFullYear()+1)))+'"></label><select id="pt">'+['Term 1','Term 2','Term 3'].map(function(t){return'<option'+(p.term===t?' selected':'')+'>'+t+'</option>'}).join('')+'</select><select id="psub">'+opts(db.subjects,p.sub||S.sub)+'</select></div><p class="mu">Choose the subject you teach. You can add other subjects in Setup.</p><button class="pri" onclick="saveProf()">Save &amp; continue</button></div>'}
@@ -352,11 +353,90 @@ function sbClient(){if(!SBC)SBC=window.supabase.createClient(SBURL,SBKEY,{auth:{
 function sbBase(){return location.origin+location.pathname}
 function sbAdapter(user){var sb=sbClient();var a={sb:1,user:{uid:user.id,email:user.email},isAdmin:false,
  login:function(){return Promise.resolve()},
- me:function(){return Promise.resolve('approved')},
+ me:function(){return sb.rpc('is_admin').then(function(r){if(r.error)throw r.error;a.isAdmin=r.data===true;if(a.isAdmin)return 'approved';
+  return sb.from('user_profiles').select('status').eq('user_id',user.id).maybeSingle().then(function(q){if(q.error)throw q.error;
+   if(q.data)return q.data.status;
+   return sb.from('user_profiles').insert({user_id:user.id,email:user.email,name:(user.user_metadata&&user.user_metadata.full_name)||'',status:'pending'}).then(function(i){if(i.error)throw i.error;return 'pending'})})})},
+ users:function(){return sb.from('user_profiles').select('user_id,email,name,status,created_at').then(function(r){if(r.error)throw r.error;return r.data.map(function(x){return{uid:x.user_id,email:x.email,name:x.name,status:x.status,created:x.created_at?new Date(x.created_at).getTime():0}})})},
+ setStatus:function(uid,st){return sb.from('user_profiles').update({status:st}).eq('user_id',uid).then(function(r){if(r.error)throw r.error})},
+ loadFor:function(uid){return sb.from('bysam_data').select('app_data').eq('user_id',uid).maybeSingle().then(function(r){if(r.error)throw r.error;return r.data?r.data.app_data:null})},
  load:function(){return sb.from('bysam_data').select('app_data').eq('user_id',user.id).maybeSingle().then(function(r){if(r.error)throw r.error;return r.data?r.data.app_data:null})},
  save:function(d){return sb.from('bysam_data').upsert({user_id:user.id,app_data:d,updated_at:new Date().toISOString()},{onConflict:'user_id'}).then(function(r){if(r.error)throw r.error})},
- logout:function(){clearTimeout(tmr);return a.save(db).catch(function(){}).then(function(){return sb.auth.signOut()}).then(function(){window.cloud=null;S.sm='in';S.tab='dash';AUTH='sbauth';initDb(null);go()})}};
+ logout:function(){clearTimeout(tmr);return a.save(db).then(function(){return sb.auth.signOut()}).then(function(r){if(r.error)throw r.error;window.cloud=null;S.sm='in';S.tab='dash';AUTH='sbauth';initDb(null);go()})}};
  return a}
+
+/* SUMMATIVE EXAMS: upload exam (opens at a set time) + marking scheme (released after the exam) */
+var EXL=[];
+function exLoc(iso){try{return new Date(iso).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'})}catch(e){return iso}}
+function exLink(code){return location.origin+location.pathname+'#exam='+code}
+function exDef(h){var d=new Date(Date.now()+h*3600000);d.setMinutes(0,0,0);var z=d.getTimezoneOffset()*60000;return new Date(d-z).toISOString().slice(0,16)}
+function exm(){
+ if(!window.cloud||!cloud.sb)return'<div class="card bad">Exams need the online (Supabase) connection. Sign in first.</div>';
+ return'<div class="card"><h2>Upload summative assessment</h2>'+
+ '<p class="mu">Students open the exam with a link at the time you set. The marking scheme stays locked until after the exam has ended. Time is enforced by the server, so it cannot be bypassed.</p>'+
+ '<div class="row"><input id="xt" placeholder="Title e.g. Physics Summative – Term 1" style="min-width:260px"><select id="xc">'+db.classes.map(function(c){return'<option>'+esc(c.name)+'</option>'}).join('')+'</select><select id="xs">'+db.subjects.map(function(c){return'<option'+(S.sub===c.id?' selected':'')+'>'+esc(c.name)+'</option>'}).join('')+'</select></div>'+
+ '<div class="row"><label class="mu">Exam opens<br><input id="xo" type="datetime-local" value="'+exDef(24)+'"></label><label class="mu">Exam ends<br><input id="xe" type="datetime-local" value="'+exDef(26)+'"></label><label class="mu">Marking scheme opens<br><input id="xm" type="datetime-local" value="'+exDef(27)+'"></label></div>'+
+ '<div class="row"><label class="mu">Exam file (PDF, Word or image, max 4 MB)<br><input id="xf" type="file" accept=".pdf,.doc,.docx,image/*"></label><label class="mu">Marking scheme (optional, can be added later)<br><input id="xk" type="file" accept=".pdf,.doc,.docx,image/*"></label></div>'+
+ '<div class="row"><button class="pri" onclick="exSave()">Upload exam</button></div><p id="xmsg" class="mu"></p></div>'+
+ '<div class="card"><h2>My exams</h2><div id="exlist" class="mu">Loading…</div></div>'}
+function exRead(f){return new Promise(function(res,rej){if(!f)return res(null);if(f.size>4*1024*1024)return rej(new Error('File "'+f.name+'" is larger than 4 MB.'));var r=new FileReader();r.onload=function(){var u=String(r.result||'');res({name:f.name,type:f.type||'application/octet-stream',b64:u.slice(u.indexOf(',')+1)})};r.onerror=function(){rej(new Error('Could not read the file.'))};r.readAsDataURL(f)})}
+async function exSave(){
+ var m=$('xmsg'),t=$('xt').value.trim(),o=$('xo').value,e=$('xe').value,k=$('xm').value;
+ if(!t){m.textContent='Write a title.';return}
+ if(!$('xf').files[0]){m.textContent='Choose the exam file.';return}
+ if(!o||!e||!k){m.textContent='Set the three times.';return}
+ var od=new Date(o),ed=new Date(e),kd=new Date(k);
+ if(!(ed>od)){m.textContent='The exam must end after it opens.';return}
+ if(kd<ed){m.textContent='The marking scheme cannot open before the exam ends.';return}
+ try{m.textContent='Uploading…';
+  var f=await exRead($('xf').files[0]),sc=await exRead($('xk').files[0]);
+  var row={title:t,class_name:$('xc').value,subject:$('xs').value,open_at:od.toISOString(),end_at:ed.toISOString(),scheme_at:kd.toISOString(),exam_name:f.name,exam_type:f.type,exam_b64:f.b64};
+  if(sc){row.scheme_name=sc.name;row.scheme_type=sc.type;row.scheme_b64=sc.b64}
+  var r=await sbClient().from('exams').insert(row);if(r.error)throw r.error;
+  m.textContent='Uploaded. Copy the student link below.';$('xt').value='';$('xf').value='';$('xk').value='';exmLoad()
+ }catch(x){m.textContent='Failed: '+(x.message||x)+(/relation .*exams|exams.*not exist|schema cache/i.test(x.message||'')?' – run exams_setup.sql in Supabase first.':'')}}
+async function exmLoad(){
+ var el=$('exlist');if(!el||!window.cloud||!cloud.sb)return;
+ var r=await sbClient().from('exams').select('id,code,title,class_name,subject,open_at,end_at,scheme_at,exam_name,scheme_name').order('open_at',{ascending:false});
+ if(r.error){el.innerHTML='<span class="bad">Could not load exams: '+esc(r.error.message)+(/exams/i.test(r.error.message)?' – run exams_setup.sql in Supabase first.':'')+'</span>';return}
+ EXL=r.data||[];if(!EXL.length){el.innerHTML='No exams uploaded yet.';return}
+ var now=Date.now();
+ el.innerHTML='<div class="sc"><table><tr><th>Exam</th><th>Class</th><th>Opens</th><th>Ends</th><th>Scheme opens</th><th>Scheme</th><th>Student link</th><th></th></tr>'+EXL.map(function(x,i){
+  var st=now<new Date(x.open_at)?'Scheduled':now<new Date(x.end_at)?'<b>Open now</b>':'Ended';
+  return'<tr><td>'+esc(x.title)+'<br><span class="mu">'+esc(x.subject||'')+' · '+st+'</span></td><td>'+esc(x.class_name||'')+'</td><td>'+exLoc(x.open_at)+'</td><td>'+exLoc(x.end_at)+'</td><td>'+exLoc(x.scheme_at)+'</td><td>'+(x.scheme_name?esc(x.scheme_name):'<span class="mu">none</span>')+'<br><input type="file" accept=".pdf,.doc,.docx,image/*" onchange="exScheme('+i+',this)"></td><td><button onclick="exCopy('+i+')">Copy link</button></td><td><button class="x" onclick="exDel('+i+')">Delete</button></td></tr>'}).join('')+'</table></div>'}
+function exCopy(i){var l=exLink(EXL[i].code);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(l).then(function(){alert('Link copied:\n'+l)},function(){prompt('Copy this link:',l)})}else prompt('Copy this link:',l)}
+async function exScheme(i,inp){try{var f=await exRead(inp.files[0]);if(!f)return;var r=await sbClient().from('exams').update({scheme_name:f.name,scheme_type:f.type,scheme_b64:f.b64}).eq('id',EXL[i].id);if(r.error)throw r.error;alert('Marking scheme saved. It opens at '+exLoc(EXL[i].scheme_at)+'.');exmLoad()}catch(x){alert('Failed: '+(x.message||x))}}
+async function exDel(i){if(!confirm('Delete "'+EXL[i].title+'" and its files? The student link will stop working.'))return;var r=await sbClient().from('exams').delete().eq('id',EXL[i].id);if(r.error){alert(r.error.message);return}exmLoad()}
+
+/* Student page: https://your-site/#exam=CODE (no login needed) */
+var EXI=null,EXOFF=0,EXT=null,EXC='';
+function exStudent(){
+ $('nav').innerHTML='';$('hb').style.display='none';$('ub').innerHTML='';
+ var code=location.hash.replace('#exam=','').replace(/[^a-z0-9]/gi,'');
+ if(!window.supabase||!window.supabase.createClient||!sbCfg()){$('v').innerHTML='<div class="card bad">Cannot connect. Check your internet and reload.</div>';return}
+ if(EXC===code&&EXI){return exDraw()}
+ EXC=code;$('v').innerHTML='<div class="card">Loading…</div>';
+ sbClient().rpc('exam_info',{p_code:code}).then(function(r){
+  if(r.error||!r.data){$('v').innerHTML='<div class="card bad"><h2>Exam not found</h2><p>Check the link with your teacher.</p></div>';return}
+  EXI=r.data;EXOFF=new Date(EXI.now).getTime()-Date.now();exDraw();clearInterval(EXT);EXT=setInterval(exDraw,1000)})}
+function exCnt(ms){var s=Math.max(0,Math.floor(ms/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return(d?d+'d ':'')+h+'h '+m+'m '+(s%60)+'s'}
+function exDraw(){
+ if(!EXI||!/^#exam=/.test(location.hash)||!$('v'))return;var now=Date.now()+EXOFF,o=new Date(EXI.open_at),e=new Date(EXI.end_at),k=new Date(EXI.scheme_at);
+ var h='<div class="card"><h2>'+esc(EXI.title)+'</h2><p class="mu">'+esc(EXI.class||'')+' · '+esc(EXI.subject||'')+'</p>';
+ if(now<o)h+='<p>The exam opens on <b>'+exLoc(EXI.open_at)+'</b>.</p><p style="font-size:22px"><b>'+exCnt(o-now)+'</b></p>';
+ else{h+=(now<e?'<p><b>The exam is open.</b> It ends at '+exLoc(EXI.end_at)+' (in '+exCnt(e-now)+').</p>':'<p class="mu">The exam ended at '+exLoc(EXI.end_at)+'.</p>');
+  h+=EXI.has_exam?'<p><button class="pri" onclick="exOpen(\'exam\')">Open exam paper</button></p>':'<p class="bad">No exam file attached.</p>'}
+ h+='</div><div class="card"><h2>Marking scheme</h2>';
+ if(now<k)h+='<p class="mu">Locked. It opens on <b>'+exLoc(EXI.scheme_at)+'</b>.</p>';
+ else h+=EXI.has_scheme?'<p><button class="pri" onclick="exOpen(\'scheme\')">Open marking scheme</button></p>':'<p class="mu">The teacher has not uploaded the marking scheme yet.</p>';
+ $('v').innerHTML=h+'</div><p id="exm2" class="bad"></p>'}
+async function exOpen(kind){
+ var r=await sbClient().rpc('exam_file',{p_code:EXC,p_kind:kind});
+ if(r.error||!r.data){$('exm2').textContent='Not available yet.';return}
+ try{var b=atob(r.data.data),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);
+  var u=URL.createObjectURL(new Blob([a],{type:r.data.type}));var l=document.createElement('a');l.href=u;l.target='_blank';l.download=r.data.name;document.body.appendChild(l);l.click();setTimeout(function(){l.remove()},1500)}catch(x){$('exm2').textContent='Could not open the file.'}}
+window.addEventListener('hashchange',function(){if(/^#exam=/.test(location.hash))exStudent()});
+
 function sbEnter(user){window.cloud=sbAdapter(user);window.dispatchEvent(new Event('authchange'))}
 function sbBoot(){if(!sbCfg()){AUTH='lout';go();return}
  SBREC=/type=recovery/.test(location.hash||'');var sb=sbClient();
@@ -606,7 +686,7 @@ function ntfXlsx(){if(!DL||!window.XLSX){alert('Download is not available here.'
  NL.forEach(function(x){var ct=contactOf(x.st);rows.push([x.st.name,c.name,ct.who,ct.phone,ct.email,x.msg])});
  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Notifications');
  DL.save({filename:'Notify_'+c.name.replace(/\W+/g,'_')+'.xlsx',data:XLSX.write(wb,{bookType:'xlsx',type:'array'})}).catch(function(){})}
-function adm(){setTimeout(admLoad,0);return'<div class="card"><h2>Administrator – user approvals</h2><div id="ulist">Loading…</div></div>'}
+function adm(){setTimeout(admLoad,0);return'<div class="card"><h2>Public website</h2><p class="mu">Manage sponsored advertisements, AdSense settings and public-site analytics (aggregated counts only).</p><a href="admin-ads.html" target="_blank" rel="noopener"><button type="button" class="pri">Open advertising &amp; analytics</button></a></div><div class="card"><h2>Administrator – user approvals</h2><div id="ulist">Loading…</div></div>'}
 function admLoad(){if(!window.cloud||!cloud.isAdmin||!$('ulist'))return;
  cloud.users().then(function(u){var cnt=function(s){return u.filter(function(x){return x.status===s}).length};
   u.sort(function(a,b){return(a.status==='pending'?0:1)-(b.status==='pending'?0:1)||(b.created||0)-(a.created||0)});
